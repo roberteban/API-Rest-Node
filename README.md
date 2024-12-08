@@ -14,14 +14,14 @@ Este es un proyecto de una API REST construida con Node.js, Express y MongoDB. L
 
 ```
 root
-├── controllers/       # Controladores de la lógica de negocio
-├── helpers/           # Funciones reutilizables
-├── models/            # Modelos de Mongoose
-├── routes/            # Definición de rutas
-├── package.json/      # Configuración del proyecto
-├── images/articles/   # Carpeta para imágenes subidas
 ├── index.js           # Archivo principal
-└── database           # Conexión a MongoDB
+├── package.json       # Configuración del proyecto
+├── database/          # Conexión a MongoDB
+├── controllers/       # Controladores de la lógica de negocio
+├── routes/            # Definición de rutas
+├── models/            # Modelos de Mongoose
+├── helpers/           # Funciones reutilizables
+├── images/articles/   # Carpeta para imágenes subidas
 ```
 
 ## ⚙️ Configuración
