@@ -37,10 +37,7 @@ root
    npm install
    ```
 
-3. Configura el archivo `.env`:
-   Crea un archivo `.env` en la raíz del proyecto basado en `.env.example`. Asegúrate de configurar:
-   - `PORT`: Puerto donde se ejecutará el servidor.
-   - `MONGO_URI`: URL de conexión a tu base de datos MongoDB.
+3. Configura tu base de datos en el archivo database/connection.js.
 
 4. Inicia el servidor:
    ```bash
