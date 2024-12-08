@@ -2,65 +2,48 @@ const fs = require("fs");
 const path = require("path");
 const { validateArticle } = require("../helpers/validate");
 const Article = require("../models/article");
-const { join } = require("path");
-const { json } = require("express");
-const { uptime } = require("os");
 
-// Función reutilizable para validar IDs
+// Helper para validar IDs
 const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
-// Controlador de artículos
+// Prueba de controlador
 const test = (req, res) => {
-    return res.status(200).json({
-        message: "Soy una acción de prueba de mi controlador de artículos",
+    res.status(200).json({
+        message: "Soy una acción de prueba del controlador de artículos",
     });
 };
 
+// Prueba con datos ficticios
 const course = (req, res) => {
-    console.log("Se ha ejecutado el endpoint probando");
-    return res.status(200).json([
-        {
-            curso: "Master en React",
-            autor: "Roberto Castillo",
-            url: "robertocastillo.cl",
-        },
-        {
-            curso: "Master en Angular",
-            autor: "Pablo Castillo",
-            url: "pablocastillo.cl",
-        },
+    res.status(200).json([
+        { curso: "Master en React", autor: "Roberto Castillo", url: "robertocastillo.cl" },
+        { curso: "Master en Angular", autor: "Pablo Castillo", url: "pablocastillo.cl" },
     ]);
 };
 
 // Crear artículo
 const postArticle = (req, res) => {
-    // Recoger parámetros por POST
     const parameters = req.body;
-    // Validar datos
     try {
-        validateArticle(parameters);
+        validateArticle(parameters); // Validación de datos
     } catch (error) {
-        return res.status(400).json({
-            status: "error",
-            message: error.message,
-        });
+        return res.status(400).json({ status: "error", message: error.message });
     }
-    // Crear objeto basado en el modelo
+
     const article = new Article({
         title: parameters.title,
         content: parameters.content,
-        image: parameters.image || "default.png", // Si no hay imagen, usa una predeterminada
+        image: parameters.image || "default.png",
     });
-    // Guardar artículo en la base de datos
+
     article.save((error, savedArticle) => {
         if (error || !savedArticle) {
             return res.status(500).json({
                 status: "error",
-                message: "No se ha podido guardar el artículo",
+                message: "No se pudo guardar el artículo",
             });
         }
-        // Devolver resultado en caso de éxito
-        return res.status(200).json({
+        res.status(200).json({
             status: "success",
             article: savedArticle,
             message: "¡Artículo creado con éxito!",
@@ -68,101 +51,53 @@ const postArticle = (req, res) => {
     });
 };
 
-// Conseguir artículos
+// Listar artículos (con o sin límite)
 const listArticles = (req, res) => {
-    // Crear consulta inicial
-    let query = Article.find().sort("-date"); // Ordenar por fecha descendente
-    // Verificar si se solicitan solo los últimos artículos
-    const limit = parseInt(req.params.ultimos, 10); // Asegurar que sea un número entero
-    if (!isNaN(limit) && limit > 0) {
-        query = query.limit(limit); // Limitar el número de artículos
-    }
-    // Ejecutar consulta
+    const limit = parseInt(req.params.ultimos, 10);
+    let query = Article.find().sort("-date");
+    if (!isNaN(limit) && limit > 0) query = query.limit(limit);
+
     query.exec((error, articles) => {
-        if (error) {
-            return res.status(500).json({
-                status: "error",
-                message: "Error al realizar la consulta",
-            });
-        }
-        if (!articles || articles.length === 0) {
+        if (error || !articles.length) {
             return res.status(404).json({
                 status: "error",
-                message: "No se han encontrado artículos",
+                message: "No se encontraron artículos",
             });
         }
-        // Respuesta en caso de éxito
-        return res.status(200).json({
-            status: "success",
-            count: articles.length,
-            articles,
-        });
+        res.status(200).json({ status: "success", count: articles.length, articles });
     });
 };
 
-// Conseguir un artículo
+// Obtener artículo por ID
 const getArticle = (req, res) => {
-    // Recoger un id por la url
     const { id } = req.params;
-    // Validar formato del ID
     if (!isValidObjectId(id)) {
-        return res.status(400).json({
-            status: "error",
-            message: "El ID proporcionado no es válido",
-        });
+        return res.status(400).json({ status: "error", message: "ID no válido" });
     }
-    // Buscar el artículo por ID en la base de datos
+
     Article.findById(id, (error, article) => {
-        // Manejar errores en la consulta o artículo no encontrado
-        if (error) {
-            return res.status(500).json({
-                status: "error",
-                message: "Error al realizar la búsqueda",
-            });
+        if (error || !article) {
+            return res.status(404).json({ status: "error", message: "Artículo no encontrado" });
         }
-        if (!article) {
-            return res.status(404).json({
-                status: "error",
-                message: "No se ha encontrado el artículo con ese ID",
-            });
-        }
-        // Devolver el resultado en caso de éxito
-        return res.status(200).json({
-            status: "success",
-            article,
-        });
+        res.status(200).json({ status: "success", article });
     });
 };
 
 // Eliminar artículo
 const deleteArticle = (req, res) => {
-    // Obtener el ID desde los parámetros
     const { id } = req.params;
-    // Validar formato del ID
     if (!isValidObjectId(id)) {
-        return res.status(400).json({
-            status: "error",
-            message: "El ID proporcionado no es válido",
-        });
+        return res.status(400).json({ status: "error", message: "ID no válido" });
     }
-    // Buscar y eliminar el artículo
+
     Article.findOneAndDelete({ _id: id }, (error, deletedArticle) => {
-        // Manejar errores en la consulta
-        if (error) {
-            return res.status(500).json({
-                status: "error",
-                message: "Error al intentar eliminar el artículo",
-            });
-        }
-        // Manejar caso en que no se encuentre el artículo
-        if (!deletedArticle) {
+        if (error || !deletedArticle) {
             return res.status(404).json({
                 status: "error",
-                message: "No se encontró un artículo con ese ID",
+                message: "Artículo no encontrado",
             });
         }
-        // Devolver resultado en caso de éxito
-        return res.status(200).json({
+        res.status(200).json({
             status: "success",
             article: deletedArticle,
             message: "¡Artículo eliminado con éxito!",
@@ -170,155 +105,86 @@ const deleteArticle = (req, res) => {
     });
 };
 
-// Editar artículo
+// Actualizar artículo
 const putArticle = (req, res) => {
-    // Recoger ID del artículo a editar
     const { id } = req.params;
-    // Validar formato del ID
     if (!isValidObjectId(id)) {
-        return res.status(400).json({
-            status: "error",
-            message: "El ID proporcionado no es válido",
-        });
+        return res.status(400).json({ status: "error", message: "ID no válido" });
     }
-    // Recoger datos del body de la solicitud
-    const parameters = { ...req.body };
-    // Validar datos
+
     try {
-        validateArticle(parameters);
+        validateArticle(req.body);
     } catch (error) {
-        return res.status(400).json({
-            status: "error",
-            message: error.message,
-        });
+        return res.status(400).json({ status: "error", message: error.message });
     }
-    // Buscar y actualizar artículos
+
     Article.findOneAndUpdate(
         { _id: id },
-        parameters,
-        { new: true, runValidators: true }, // Validar y devolver el artículo actualizado
+        req.body,
+        { new: true, runValidators: true },
         (error, updatedArticle) => {
-            // Manejar errores en la base de datos
-            if (error) {
-                return res.status(500).json({
-                    status: "error",
-                    message: "Error al intentar editar el artículo",
-                });
-            }
-            // Manejar caso en que no se encuentre el artículo
-            if (!updatedArticle) {
+            if (error || !updatedArticle) {
                 return res.status(404).json({
                     status: "error",
-                    message: "No se encontró un artículo con ese ID",
+                    message: "Artículo no encontrado o error al actualizar",
                 });
             }
-            // Devolver respuesta en caso de éxito
-            return res.status(200).json({
-                status: "success",
-                article: updatedArticle,
-            });
+            res.status(200).json({ status: "success", article: updatedArticle });
         }
     );
 };
 
-// Subir archivos
+// Subir imagen
 const uploadImage = (req, res) => {
-    // Validar que el archivo haya sido subido
-    if (!req.file || !req.file.originalname) {
-        return res.status(400).json({
-            status: "error",
-            message: "No se ha subido ningún archivo",
-        });
+    if (!req.file) {
+        return res.status(400).json({ status: "error", message: "Archivo no proporcionado" });
     }
-    // Nombre del archivo
-    const fileName = req.file.originalname;
 
-    // Obtener la extensión del archivo
-    const extensionFile = fileName.split(".").pop().toLowerCase();
-
-    // Comprobar la extensión correcta
+    const fileExtension = req.file.originalname.split(".").pop().toLowerCase();
     const validExtensions = ["png", "jpg", "jpeg", "gif"];
-    if (!validExtensions.includes(extensionFile)) {
-        // Borrar archivo y devolver error
-        fs.unlink(req.file.path, () => {
-            return res.status(400).json({
-                status: "error",
-                message: "Extensión de archivo no válida",
-            });
-        });
-        return; // Salir de la función
+    if (!validExtensions.includes(fileExtension)) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(400).json({ status: "error", message: "Extensión no válida" });
     }
-    // Recoger el ID del artículo
-    const articleId = req.params.id;
-    // Buscar y actualizar el artículo
+
+    const { id } = req.params;
     Article.findOneAndUpdate(
-        { _id: articleId },
+        { _id: id },
         { image: req.file.filename },
         { new: true },
         (error, updatedArticle) => {
             if (error || !updatedArticle) {
-                return res.status(500).json({
+                return res.status(404).json({
                     status: "error",
-                    message: "Error al actualizar el artículo o no se encontró",
+                    message: "Error al actualizar o artículo no encontrado",
                 });
             }
-
-            // Devolver respuesta en caso de éxito
-            return res.status(200).json({
-                status: "success",
-                article: updatedArticle,
-                file: req.file,
-            });
+            res.status(200).json({ status: "success", article: updatedArticle });
         }
     );
 };
 
-const image = (req, res) => {
-    // Obtener el nombre del archivo
-    const file = req.params.file;
-    const physicalRoute = `./images/articles/${file}`;
-
-    // Comprobar si el archivo existe
-    fs.stat(physicalRoute, (error) => {
-        if (error) {
-            return res.status(404).json({
-                status: "error",
-                message: "La imagen no existe",
-            });
-        }
-
-        // Enviar el archivo
-        return res.sendFile(path.resolve(physicalRoute));
-    });
+// Buscar artículos por texto
+const seeker = (req, res) => {
+    const search = req.params.busqueda;
+    Article.find({
+        $or: [
+            { title: { $regex: search, $options: "i" } },
+            { content: { $regex: search, $options: "i" } },
+        ],
+    })
+        .sort("-date")
+        .exec((error, articles) => {
+            if (error || !articles.length) {
+                return res.status(404).json({
+                    status: "error",
+                    message: "No se encontraron artículos",
+                });
+            }
+            res.status(200).json({ status: "success", articles });
+        });
 };
 
-// Buscador
-const seeker = (req, res)=>{
-    // Sacar del string de busqueda
-    let search = req.params.search;
-
-    // Find OR
-    Article.find({"$or":[
-        {"title": {"$regex": search, "$options": "i"}},
-        {"content": {"$regex": search, "$options": "i"}},
-    ]})
-    // Orden
-    .sort({fecha:-1})
-    .exec((error,articlesFound)=>{
-        if(error||!articlesFound||articlesFound.length<=0){
-            return res.status(404).json({
-                status: "error",
-                message: "No se han encontrado artículos",
-            });
-        }
-        return res.status(200).json({
-            status: "success",
-            articles: articlesFound,
-        })
-    })
-}
-
-// Exportar el controlador
 module.exports = {
     test,
     course,
@@ -328,6 +194,5 @@ module.exports = {
     deleteArticle,
     putArticle,
     uploadImage,
-    image,
     seeker,
 };
