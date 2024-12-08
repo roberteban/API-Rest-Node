@@ -1,0 +1,13 @@
+# Desarrollador
+.vscode/
+.idea/
+
+# Dependencias
+node_modules/
+package-lock.json
+
+# Archivos temporales
+npm-debug.log
+
+# Cachés
+.cache/
