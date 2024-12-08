@@ -19,7 +19,7 @@ root
 ├── models/            # Modelos de Mongoose
 ├── routes/            # Definición de rutas
 ├── images/articles/   # Carpeta para imágenes subidas
-├── app.js             # Configuración principal del servidor
+├── index.js             # Configuración principal del servidor
 └── .env.example       # Ejemplo del archivo de configuración de entorno
 ```
 
