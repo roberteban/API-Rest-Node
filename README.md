@@ -18,9 +18,10 @@ root
 ├── helpers/           # Funciones reutilizables
 ├── models/            # Modelos de Mongoose
 ├── routes/            # Definición de rutas
+├── package.json/      # Configuración del proyecto
 ├── images/articles/   # Carpeta para imágenes subidas
-├── index.js             # Configuración principal del servidor
-└── .env.example       # Ejemplo del archivo de configuración de entorno
+├── index.js           # Archivo principal
+└── database           # Conexión a MongoDB
 ```
 
 ## ⚙️ Configuración
